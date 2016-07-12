@@ -22,19 +22,21 @@ func ToByte(v string) []byte {
 func assert(wr io.Writer, result bool, f func(), cd int) {
 	if !result {
 		_, file, line, _ := runtime.Caller(cd + 1)
-		wr.Write(ToByte(fmt.Sprintf("%s:%d", file, line)))
+		// wr.Write(ToByte(fmt.Sprintf("%s:%d\n", file, line)))
+		l := len(file)
+		os.Stderr.WriteString(fmt.Sprintf("%s:%d", file[2*l/3:], line))
 		f()
-		os.Exit(0)
+		// os.Exit(0)
 	}
 }
 
 func equal(wr io.Writer, exp, got interface{}, cd int, args ...interface{}) {
 	fn := func() {
 		for _, desc := range pretty.Diff(exp, got) {
-			wr.Write(ToByte(fmt.Sprintf("! %s", desc)))
+			wr.Write(ToByte(fmt.Sprintf("\t%s\n", desc)))
 		}
 		if len(args) > 0 {
-			wr.Write(ToByte(fmt.Sprintf("! %s %s", " -", fmt.Sprint(args...))))
+			wr.Write(ToByte(fmt.Sprintf("\t%s %s\n", " -", fmt.Sprint(args...))))
 		}
 	}
 	result := reflect.DeepEqual(exp, got)
@@ -43,9 +45,9 @@ func equal(wr io.Writer, exp, got interface{}, cd int, args ...interface{}) {
 
 func tt(wr io.Writer, result bool, cd int, args ...interface{}) {
 	fn := func() {
-		wr.Write(ToByte(fmt.Sprintf("!  Failure")))
+		wr.Write(ToByte(fmt.Sprintf("! Failure")))
 		if len(args) > 0 {
-			wr.Write(ToByte(fmt.Sprintf("! %s %s", " -", fmt.Sprint(args...))))
+			wr.Write(ToByte(fmt.Sprintf("\n\t%s %s", " -", fmt.Sprint(args...))))
 		}
 	}
 	assert(wr, result, fn, cd+1)
@@ -97,9 +99,9 @@ func NotEqual(wr io.Writer, args ...interface{}) {
 	}
 	for i := 0; i < length/2; i += 1 {
 		fn := func() {
-			wr.Write(ToByte(fmt.Sprintf("!  Unexpected: <%#v>", args[2*i])))
+			wr.Write(ToByte(fmt.Sprintf("\n\t Unexpected: <%#v>", args[2*i])))
 			if length%2 == 1 {
-				wr.Write(ToByte(fmt.Sprintf("! %s %s", " -", fmt.Sprint(args[length-1]))))
+				wr.Write(ToByte(fmt.Sprintf("\n\t%s %s", " -", fmt.Sprint(args[length-1]))))
 			}
 		}
 		result := !reflect.DeepEqual(args[2*i], args[2*i+1])
